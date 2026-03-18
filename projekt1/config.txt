@@ -1,5 +1,6 @@
+use_generator=1
 input_file=data/matrix_11x11.atsp
 output_file=output/results.csv
-repetitions=100
+repetitions=10
 instance_size=11
 show_progress=1

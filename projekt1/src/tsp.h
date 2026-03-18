@@ -11,6 +11,6 @@ public:
     TSP(const std::vector<std::vector<int>>& adj_matrix);
     
     int bruteForce(std::vector<int>& best_path);
-    int nearestNeighbor(std::vector<int>& best_path, int start_vertex = 0);
+    int nearestNeighbor(std::vector<int>& best_path);
     int randomWalk(std::vector<int>& best_path);
 };

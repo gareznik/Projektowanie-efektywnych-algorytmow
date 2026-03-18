@@ -5,9 +5,13 @@
 #include <sstream>
 #include <chrono>
 #include <iomanip>
+#include <random>
+#include <windows.h>
+#include <psapi.h>
 #include "tsp.h"
 
 struct Config {
+    bool useGenerator = false;
     std::string inputFile;
     std::string outputFile;
     int repetitions = 1;
@@ -37,7 +41,8 @@ Config readConfig(const std::string& filename) {
                     value.pop_back();
                 }
 
-                if (key == "input_file") cfg.inputFile = value;
+                if (key == "use_generator") cfg.useGenerator = (value == "1");
+                else if (key == "input_file") cfg.inputFile = value;
                 else if (key == "output_file") cfg.outputFile = value;
                 else if (key == "repetitions") cfg.repetitions = std::stoi(value);
                 else if (key == "instance_size") cfg.instanceSize = std::stoi(value);
@@ -46,6 +51,45 @@ Config readConfig(const std::string& filename) {
         }
     }
     return cfg;
+}
+
+// generator matryc losowych atsp
+std::vector<std::vector<int>> generateRandomMatrix(int size) {
+    std::vector<std::vector<int>> matrix(size, std::vector<int>(size));
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(1, 100); // odlełości od 1 do 100
+
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+            if (i == j) {
+                matrix[i][j] = -1; // zawsze -1 po przekątnej
+            } else {
+                matrix[i][j] = dist(gen);
+            }
+        }
+    }
+    return matrix;
+}
+
+// funkcja pomocnicza do wyświetlania macierzy (zakomentowac przed oddaniem, sluzy tylko dla testpowania generatora)
+void printMatrix(const std::vector<std::vector<int>>& matrix) {
+    std::cout << "Wygenerowana macierz:\n";
+    for (size_t i = 0; i < matrix.size(); ++i) {
+        for (size_t j = 0; j < matrix[i].size(); ++j) {
+            std::cout << std::setw(4) << matrix[i][j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}
+
+SIZE_T getMemoryUsage() {
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+        return pmc.WorkingSetSize / 1024; // Делим на 1024, чтобы получить Килобайты
+    }
+    return 0;
 }
 
 std::vector<std::vector<int>> loadMatrix(const std::string& filename) {
@@ -82,7 +126,19 @@ int main() {
     std::cout << "Rozmiar instancji: " << cfg.instanceSize << "\n";
     std::cout << "-----------------------------\n";
 
-    std::vector<std::vector<int>> matrix = loadMatrix(cfg.inputFile);
+    std::vector<std::vector<int>> matrix;
+
+    if (cfg.useGenerator) {
+        std::cout << "Tryb: Generowanie losowej macierzy.\n";
+        std::cout << "Rozmiar instancji: " << cfg.instanceSize << "x" << cfg.instanceSize << "\n\n";
+        matrix = generateRandomMatrix(cfg.instanceSize);
+        printMatrix(matrix) ; // zakomentowac przed oddaniem, sluzy tylko dla testpowania generatora
+    } else {
+        std::cout << "Tryb: Wczytywanie macierzy z pliku.\n";
+        std::cout << "Plik wejsciowy: " << cfg.inputFile << "\n";
+        matrix = loadMatrix(cfg.inputFile);
+        std::cout << "Pomyslnie wczytano macierz o rozmiarze: " << matrix.size() << "x" << matrix.size() << "\n\n";
+    }
     
     TSP tsp(matrix);
     std::vector<int> best_path;
@@ -115,7 +171,7 @@ int main() {
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "Nearest Neighbor postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
         auto start = std::chrono::high_resolution_clock::now();
-        best_cost = tsp.nearestNeighbor(best_path, 0); 
+        best_cost = tsp.nearestNeighbor(best_path); 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         total_time_nn += duration.count();
@@ -140,6 +196,10 @@ int main() {
 
     outFile.close();
     std::cout << "\nTesty zakonczone. Wyniki w: " << cfg.outputFile << "\n";
+
+    std::cout << "========================================\n";
+    std::cout << "Zajeta pamiec (RAM): " << getMemoryUsage() << " KB\n";
+    std::cout << "========================================\n";
 
     return 0;
 }

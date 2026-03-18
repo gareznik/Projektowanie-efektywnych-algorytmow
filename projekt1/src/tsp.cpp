@@ -39,9 +39,14 @@ int TSP::bruteForce(std::vector<int>& best_path) {
 }
 
 // 2. Metoda najbliższych sąsiadów (Nearest Neighbor)
-int TSP::nearestNeighbor(std::vector<int>& best_path, int start_vertex) {
+int TSP::nearestNeighbor(std::vector<int>& best_path) {
     std::vector<bool> visited(num_vertices, false);
     best_path.clear();
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::uniform_int_distribution<> dist(0, num_vertices - 1);
+    int start_vertex = dist(g);
     
     int current_vertex = start_vertex;
     best_path.push_back(current_vertex);
@@ -68,7 +73,7 @@ int TSP::nearestNeighbor(std::vector<int>& best_path, int start_vertex) {
         current_vertex = next_vertex;
     }
 
-    total_cost += matrix[current_vertex][best_path[0]]; 
+    total_cost += matrix[current_vertex][start_vertex]; 
     return total_cost;
 }
 
@@ -80,7 +85,7 @@ int TSP::randomWalk(std::vector<int>& best_path) {
     std::random_device rd;
     std::mt19937 g(rd());
     
-    std::shuffle(current_path.begin() + 1, current_path.end(), g);
+    std::shuffle(current_path.begin(), current_path.end(), g);
     
     best_path = current_path;
     return calculatePathCost(current_path);

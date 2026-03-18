@@ -7,13 +7,14 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "${workspaceFolder}\\zadanie1\\src\\main.cpp",
-                "${workspaceFolder}\\zadanie1\\src\\tsp.cpp",
+                "${workspaceFolder}\\projekt1\\src\\main.cpp",
+                "${workspaceFolder}\\projekt1\\src\\tsp.cpp",
                 "-o",
-                "${workspaceFolder}\\zadanie1\\zadanie1.exe"
+                "${workspaceFolder}\\projekt1\\projekt1.exe",
+                "-lpsapi"
             ],
             "options": {
-                "cwd": "${workspaceFolder}\\zadanie1"
+                "cwd": "${workspaceFolder}\\projekt1"
             },
             "problemMatcher": [
                 "$gcc"
