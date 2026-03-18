@@ -1,0 +1,5 @@
+input_file=data/matrix_11x11.atsp
+output_file=output/results.csv
+repetitions=100
+instance_size=11
+show_progress=1
