@@ -114,17 +114,30 @@ void TSP::rnn_dfs(int current_vertex, std::vector<bool>& visited, std::vector<in
 }
 
 // 3.1 - wywolanie rekurencyjnej metody najbliższych sąsiadów (rnn)
-int TSP::repetitiveNearestNeighbor(std::vector<int>& best_path, int start_vertex) {
-    std::vector<bool> visited(num_vertices, false);
-    std::vector<int> current_path;
-    int best_cost = INT_MAX;
+int TSP::repetitiveNearestNeighbor(std::vector<int>& best_overall_path) {
+    int global_best_cost = INT_MAX;
+
+    // próbujemy jako startowe miasto każde z dostępnych, aby znaleźć najlepszy możliwy wynik
+    for (int start_vertex = 0; start_vertex < num_vertices; ++start_vertex) {
+        std::vector<bool> visited(num_vertices, false);
+        std::vector<int> current_path;
+        std::vector<int> local_best_path;
+        int local_best_cost = INT_MAX;
+        
+        visited[start_vertex] = true;
+        current_path.push_back(start_vertex);
+        
+        // wywołujemy rekurencyjną metodę najbliższych sąsiadów dla danego miasta startowego
+        rnn_dfs(start_vertex, visited, current_path, 0, local_best_cost, local_best_path, start_vertex);
+        
+        // aktualizujemy globalny najlepszy wynik, jeśli lokalny jest lepszy
+        if (local_best_cost < global_best_cost) {
+            global_best_cost = local_best_cost;
+            best_overall_path = local_best_path;
+        }
+    }
     
-    visited[start_vertex] = true;
-    current_path.push_back(start_vertex);
-    
-    rnn_dfs(start_vertex, visited, current_path, 0, best_cost, best_path, start_vertex);
-    
-    return best_cost;
+    return global_best_cost;
 }
 
 // 4 - random walk
@@ -137,7 +150,8 @@ int TSP::randomWalk(std::vector<int>& best_path, int iterations) {
     std::mt19937 g(rd());
 
     for (int i = 0; i < iterations; ++i) {
-        std::shuffle(current_path.begin(), current_path.end(), g);
+        // zawsze startujemy z miasta z indeksem 0, a resztę losowo tasujemy
+        std::shuffle(current_path.begin() + 1, current_path.end(), g);
         int cost = calculatePathCost(current_path);
         
         if (cost < global_min_cost) {

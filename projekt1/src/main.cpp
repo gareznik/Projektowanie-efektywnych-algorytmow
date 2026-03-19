@@ -135,6 +135,11 @@ SIZE_T getMemoryUsage() {
     return 0;
 }
 
+double relativeError(int approx, int optimum) {
+    if (optimum <= 0) return 0.0;
+    return 100.0 * (double)(approx - optimum) / (double)optimum;
+}
+
 int main() {
     std::string configPath = "config.txt"; 
     Config cfg = readConfig(configPath);
@@ -207,7 +212,7 @@ int main() {
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "RNN postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
         auto start = std::chrono::high_resolution_clock::now();
-        best_cost = tsp.repetitiveNearestNeighbor(best_path, 0); 
+        best_cost = tsp.repetitiveNearestNeighbor(best_path); 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         total_time_rnn += duration.count();

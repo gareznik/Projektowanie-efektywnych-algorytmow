@@ -21,7 +21,7 @@ public:
     int nearestNeighbor(std::vector<int>& best_path, int start_vertex = 0);
     
     // rnn
-    int repetitiveNearestNeighbor(std::vector<int>& best_path, int start_vertex = 0);
+    int repetitiveNearestNeighbor(std::vector<int>& best_path);
     
     // rand
     int randomWalk(std::vector<int>& best_path, int iterations = 1000);
