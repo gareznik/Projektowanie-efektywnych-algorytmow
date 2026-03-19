@@ -8,6 +8,7 @@
 #include <random>
 #include <windows.h>
 #include <psapi.h>
+
 #include "tsp.h"
 
 struct Config {
@@ -78,7 +79,7 @@ std::vector<std::vector<int>> loadMatrix(const std::string& filename) {
     return matrix;
 }
 
-// gemerator asymetrycznej macierzy ATSP
+// gemeratory 
 std::vector<std::vector<int>> generateRandomATSP(int size) {
     std::vector<std::vector<int>> matrix(size, std::vector<int>(size));
     std::random_device rd;
@@ -91,10 +92,10 @@ std::vector<std::vector<int>> generateRandomATSP(int size) {
             else matrix[i][j] = dist(gen);
         }
     }
+
     return matrix;
 }
 
-// generator symetrycznych macierzy STSP - taki sam koszt w obie strony
 std::vector<std::vector<int>> generateRandomSTSP(int size) {
     std::vector<std::vector<int>> matrix(size, std::vector<int>(size));
     std::random_device rd;
@@ -108,14 +109,13 @@ std::vector<std::vector<int>> generateRandomSTSP(int size) {
             } else {
                 int cost = dist(gen);
                 matrix[i][j] = cost;
-                matrix[j][i] = cost; // symetryczna macierz - ten sam koszt w obie strony
+                matrix[j][i] = cost; // symetrzyczna macierz - ten sam koszt w obie strony
             }
         }
     }
     return matrix;
 }
 
-// funkcja pomocnicza do wyświetlania macierzy (zakomentowac przed oddaniem, sluzy tylko dla testpowania generatora)
 void printMatrix(const std::vector<std::vector<int>>& matrix) {
     std::cout << "Wygenerowana macierz:\n";
     for (size_t i = 0; i < matrix.size(); ++i) {
@@ -130,7 +130,7 @@ void printMatrix(const std::vector<std::vector<int>>& matrix) {
 SIZE_T getMemoryUsage() {
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-        return pmc.WorkingSetSize / 1024; // dzielimy przez 1024, aby uzyskać wynik w KB
+        return pmc.WorkingSetSize / 1024; //wynik w KB
     }
     return 0;
 }
@@ -164,6 +164,9 @@ int main() {
         matrix = loadMatrix(cfg.inputFile);
         std::cout << "Rozmiar instancji: " << matrix.size() << "x" << matrix.size() << "\n";
     }
+
+    printMatrix(matrix);
+    
     std::cout << "Powtorzenia: " << cfg.repetitions << "\n";
     std::cout << "========================================\n\n";
 
@@ -177,7 +180,7 @@ int main() {
         return 1;
     }
 
-    std::cout << "--- Rozpoczynamy testy algorytmow ---\n";
+    std::cout << "--- Rozpoczynamy testy algorytmow ---\n\n";
 
     // 1 -brute force
     double total_time_bf = 0;
@@ -191,6 +194,7 @@ int main() {
         outFile << "BruteForce," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
     }
     if (cfg.showProgress) std::cout << "\n";
+    int bf_best_cost = best_cost;
     std::cout << "Brute Force: Koszt = " << best_cost << ", Sredni czas = " << total_time_bf / cfg.repetitions << " ms\n\n";
 
     // 2 - nearest neighbor
@@ -198,14 +202,15 @@ int main() {
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "Nearest neighbor postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
         auto start = std::chrono::high_resolution_clock::now();
-        best_cost = tsp.nearestNeighbor(best_path, 0); 
+        best_cost = tsp.nearestNeighbor(best_path); 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         total_time_nn += duration.count();
         outFile << "NearestNeighbor," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
     }
     if (cfg.showProgress) std::cout << "\n";
-    std::cout << "Nearest Neighbor: Koszt = " << best_cost << ", Sredni czas = " << total_time_nn / cfg.repetitions << " ms\n\n";
+    std::cout << "Nearest Neighbor: Koszt = " << best_cost << ", Sredni czas = " << total_time_nn / cfg.repetitions << " ms\n";
+    std::cout << "Blad wzgledny NN = " << std::fixed << std::setprecision(2) << relativeError(best_cost, bf_best_cost) << " %\n\n";
 
     // 3 - rnn
     double total_time_rnn = 0;
@@ -219,7 +224,8 @@ int main() {
         outFile << "RNN," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
     }
     if (cfg.showProgress) std::cout << "\n";
-    std::cout << "RNN: Koszt = " << best_cost << ", Sredni czas = " << total_time_rnn / cfg.repetitions << " ms\n\n";
+    std::cout << "RNN: Koszt = " << best_cost << ", Sredni czas = " << total_time_rnn / cfg.repetitions << " ms\n";
+    std::cout << "Blad wzgledny RNN = " << std::fixed << std::setprecision(2) << relativeError(best_cost, bf_best_cost) << " %\n\n";
 
     // 4 - random walk
     double total_time_rnd = 0;
@@ -234,13 +240,14 @@ int main() {
     }
     if (cfg.showProgress) std::cout << "\n";
     std::cout << "RAND (iteracji: " << cfg.randIterations << "): Koszt (z ostatniej proby) = " << best_cost << ", Sredni czas = " << total_time_rnd / cfg.repetitions << " ms\n";
+    std::cout << "Blad wzgledny RAND = " << std::fixed << std::setprecision(2) << relativeError(best_cost, bf_best_cost) << " %\n\n";
 
     outFile.close();
-    std::cout << "\nTesty zakonczone. Wyniki w: " << cfg.outputFile << "\n";
+    std::cout << "\nTesty zakonczone. Wyniki w: " << cfg.outputFile << "\n\n";
 
     std::cout << "========================================\n";
     std::cout << "Zajeta pamiec (RAM): " << getMemoryUsage() << " KB\n";
-    std::cout << "========================================\n";
+    std::cout << "========================================\n\n";
 
     return 0;
 }

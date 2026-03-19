@@ -70,7 +70,7 @@ int TSP::nearestNeighbor(std::vector<int>& best_path, int start_vertex) {
     return total_cost;
 }
 
-// 3 - rekurencyjna metoda najbliższych sąsiadów rnn - backtracking z rozgałęzieniem na wszystkie równe opcje
+// 3 - rrekurencyjna metoda najbliższych sąsiadów rnn
 void TSP::rnn_dfs(int current_vertex, std::vector<bool>& visited, std::vector<int>& current_path, 
                   int current_cost, int& best_cost, std::vector<int>& best_path, int start_vertex) {
     
@@ -93,7 +93,7 @@ void TSP::rnn_dfs(int current_vertex, std::vector<bool>& visited, std::vector<in
                 next_vertices.clear();
                 next_vertices.push_back(i);
             } else if (matrix[current_vertex][i] == min_edge) {
-                // Jeśli koszt jest taki sam, jak minimalny - zapamiętujemy też to miasto
+                //koszt jest taki samy, jak minimalny - zapamiętujemy też to miasto
                 next_vertices.push_back(i);
             }
         }
@@ -150,7 +150,7 @@ int TSP::randomWalk(std::vector<int>& best_path, int iterations) {
     std::mt19937 g(rd());
 
     for (int i = 0; i < iterations; ++i) {
-        // zawsze startujemy z miasta z indeksem 0, a resztę losowo tasujemy
+        // zawsze startujemy z miasta z indeksem 0, a reszta jest losowa
         std::shuffle(current_path.begin() + 1, current_path.end(), g);
         int cost = calculatePathCost(current_path);
         

@@ -1,11 +1,11 @@
 # GENERATOR: 0 = wczytywanie z pliku, 1 = losowa ATSP, 2 = losowa STSP
-use_generator=0
+use_generator=2
 input_file=input/matrix_11x11.atsp
 output_file=output/results.csv
 repetitions=10
-instance_size=11
+instance_size=9
 
 # Ilosc generowanych sciezek dla algorytmu RAND (szukamy 10% bledu)
-rand_iterations=5000
+rand_iterations=1000
 
 show_progress=1
