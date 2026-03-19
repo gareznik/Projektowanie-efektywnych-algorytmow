@@ -12,7 +12,7 @@
 #include "tsp.h"
 
 struct Config {
-    int useGenerator = 0; // 0 - z pliku, 1 - losowa ATSP, 2 - losowa STSP
+    int useGenerator = 1; // 0 - z pliku, 1 - losowa ATSP, 2 - losowa STSP
     std::string inputFile;
     std::string outputFile;
     int repetitions = 1;
