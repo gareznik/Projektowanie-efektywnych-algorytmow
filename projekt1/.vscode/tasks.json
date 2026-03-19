@@ -1,0 +1,30 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++.exe build active file",
+            "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${workspaceFolder}\\src\\main.cpp",
+                "${workspaceFolder}\\src\\tsp.cpp",
+                "-o",
+                "${workspaceFolder}\\projekt1.exe",
+                "-lpsapi"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Task zaktualizowany dla zadania 1"
+        }
+    ],
+    "version": "2.0.0"
+}

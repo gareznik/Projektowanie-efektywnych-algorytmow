@@ -165,7 +165,7 @@ int main() {
         std::cout << "Rozmiar instancji: " << matrix.size() << "x" << matrix.size() << "\n";
     }
 
-    printMatrix(matrix);
+    //printMatrix(matrix);
     
     std::cout << "Powtorzenia: " << cfg.repetitions << "\n";
     std::cout << "========================================\n\n";
@@ -229,6 +229,8 @@ int main() {
 
     // 4 - random walk
     double total_time_rnd = 0;
+    int best_rnd_cost = INT_MAX;
+
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "Random postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
         auto start = std::chrono::high_resolution_clock::now();
@@ -236,11 +238,16 @@ int main() {
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         total_time_rnd += duration.count();
+
+        if (best_cost < best_rnd_cost) {
+            best_rnd_cost = best_cost;
+        }
+
         outFile << "Random," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
     }
     if (cfg.showProgress) std::cout << "\n";
-    std::cout << "RAND (iteracji: " << cfg.randIterations << "): Koszt (z ostatniej proby) = " << best_cost << ", Sredni czas = " << total_time_rnd / cfg.repetitions << " ms\n";
-    std::cout << "Blad wzgledny RAND = " << std::fixed << std::setprecision(2) << relativeError(best_cost, bf_best_cost) << " %\n\n";
+    std::cout << "RAND (iteracji: " << cfg.randIterations << "): Najlepszy koszt = " << best_rnd_cost << ", Sredni czas = " << total_time_rnd / cfg.repetitions << " ms\n";
+    std::cout << "Blad wzgledny RAND = " << std::fixed << std::setprecision(2) << relativeError(best_rnd_cost, bf_best_cost) << " %\n\n";
 
     outFile.close();
     std::cout << "\nTesty zakonczone. Wyniki w: " << cfg.outputFile << "\n\n";
