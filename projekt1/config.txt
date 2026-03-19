@@ -1,6 +1,6 @@
 # GENERATOR: 0 = wczytywanie z pliku, 1 = losowa ATSP, 2 = losowa STSP
-use_generator=2
-input_file=data/matrix_11x11.atsp
+use_generator=0
+input_file=input/matrix_11x11.atsp
 output_file=output/results.csv
 repetitions=10
 instance_size=11
