@@ -8,15 +8,14 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "-O3",
-                "${workspaceFolder}\\projekt1\\src\\main.cpp",
-                "${workspaceFolder}\\projekt1\\src\\tsp.cpp",
+                "${workspaceFolder}\\src\\main.cpp",
                 "-o",
-                "${workspaceFolder}\\projekt1\\projekt1.exe",
+                "${workspaceFolder}\\projekt2.exe",
                 "-lpsapi",
                 "-static"
             ],
             "options": {
-                "cwd": "${workspaceFolder}\\projekt1"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
@@ -25,7 +24,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Task zaktualizowany dla zadania 1"
+            "detail": "Kompilacja B&B z optymalizacją"
         }
     ],
     "version": "2.0.0"
