@@ -1,12 +1,12 @@
 # GENERATOR: 0 = z pliku, 1 = losowa ATSP, 2 = losowa STSP
-use_generator=1
+use_generator=0
 
 # Sciezki do plikow
-input_file=input/br17.atsp
+input_file=input/matrix_6x6.atsp
 output_file=output/results.csv
 
 # Ustawienia
-repetitions=10
 instance_size=10
+repetitions=10
 time_limit_s=300
 show_progress=1
