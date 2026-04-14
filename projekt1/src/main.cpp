@@ -10,6 +10,7 @@
 #include <psapi.h>
 
 #include "tsp.h"
+#include "tsplib_parser.h" // <--- ПОДКЛЮЧИЛИ НАШ НОВЫЙ ПАРСЕР
 
 struct Config {
     int useGenerator = 1; // 0 - z pliku, 1 - losowa ATSP, 2 - losowa STSP
@@ -27,7 +28,8 @@ Config readConfig(const std::string& filename) {
     
     if (!file.is_open()) {
         std::cerr << "Blad: Nie mozna otworzyc pliku konfiguracyjnego: " << filename << std::endl;
-        exit(1);
+        std::cerr << "Upewnij sie, ze uruchamiasz program z wlasciwego folderu.\n";
+        return cfg;
     }
 
     std::string line;
@@ -56,30 +58,7 @@ Config readConfig(const std::string& filename) {
     return cfg;
 }
 
-std::vector<std::vector<int>> loadMatrix(const std::string& filename) {
-    std::ifstream file(filename);
-    
-    if (!file.is_open()) {
-        std::cerr << "Blad: Nie mozna otworzyc pliku z macierza: " << filename << std::endl;
-        exit(1);
-    }
-
-    int size;
-    file >> size; 
-
-    std::vector<std::vector<int>> matrix(size, std::vector<int>(size));
-
-    for (int i = 0; i < size; ++i) {
-        for (int j = 0; j < size; ++j) {
-            file >> matrix[i][j];
-        }
-    }
-
-    file.close();
-    return matrix;
-}
-
-// gemeratory 
+// Генераторы остались прежними
 std::vector<std::vector<int>> generateRandomATSP(int size) {
     std::vector<std::vector<int>> matrix(size, std::vector<int>(size));
     std::random_device rd;
@@ -92,7 +71,6 @@ std::vector<std::vector<int>> generateRandomATSP(int size) {
             else matrix[i][j] = dist(gen);
         }
     }
-
     return matrix;
 }
 
@@ -109,28 +87,17 @@ std::vector<std::vector<int>> generateRandomSTSP(int size) {
             } else {
                 int cost = dist(gen);
                 matrix[i][j] = cost;
-                matrix[j][i] = cost; // symetrzyczna macierz - ten sam koszt w obie strony
+                matrix[j][i] = cost; // symetryczna macierz
             }
         }
     }
     return matrix;
 }
 
-void printMatrix(const std::vector<std::vector<int>>& matrix) {
-    std::cout << "Wygenerowana macierz:\n";
-    for (size_t i = 0; i < matrix.size(); ++i) {
-        for (size_t j = 0; j < matrix[i].size(); ++j) {
-            std::cout << std::setw(4) << matrix[i][j] << " ";
-        }
-        std::cout << "\n";
-    }
-    std::cout << "\n";
-}
-
 SIZE_T getMemoryUsage() {
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-        return pmc.WorkingSetSize / 1024; //wynik w KB
+        return pmc.WorkingSetSize / 1024; // wynik w KB
     }
     return 0;
 }
@@ -141,6 +108,9 @@ double relativeError(int approx, int optimum) {
 }
 
 int main() {
+    // Жесткая привязка к 1 ядру для стабильных тестов времени
+    SetProcessAffinityMask(GetCurrentProcess(), 1);
+
     std::string configPath = "config.txt"; 
     Config cfg = readConfig(configPath);
 
@@ -161,18 +131,33 @@ int main() {
     } else {
         std::cout << "Tryb: Wczytywanie macierzy z pliku.\n";
         std::cout << "Plik wejsciowy: " << cfg.inputFile << "\n";
-        matrix = loadMatrix(cfg.inputFile);
-        std::cout << "Rozmiar instancji: " << matrix.size() << "x" << matrix.size() << "\n";
+        
+        // Защита от пустого пути
+        if (cfg.inputFile.empty()) {
+            std::cerr << "Blad: Sciezka do pliku (input_file) jest pusta!\n";
+            return 1;
+        }
+        
+        // <--- ИСПОЛЬЗУЕМ НОВЫЙ ПАРСЕР --->
+        matrix = TSPLibParser::loadMatrix(cfg.inputFile); 
+        
+        if (!matrix.empty()) {
+            std::cout << "Rozmiar instancji: " << matrix.size() << "x" << matrix.size() << "\n";
+        }
     }
 
-    //printMatrix(matrix);
+    // Защита от пустой матрицы (или ошибки чтения)
+    if (matrix.empty() || matrix.size() < 3) {
+        std::cerr << "Blad: Macierz jest pusta lub za mala!\n";
+        return 1;
+    }
     
     std::cout << "Powtorzenia: " << cfg.repetitions << "\n";
     std::cout << "========================================\n\n";
 
     TSP tsp(matrix);
     std::vector<int> best_path;
-    int best_cost;
+    int best_cost = 0;
 
     std::ofstream outFile(cfg.outputFile, std::ios::app);
     if (!outFile.is_open()) {
@@ -182,7 +167,7 @@ int main() {
 
     std::cout << "--- Rozpoczynamy testy algorytmow ---\n\n";
 
-    // 1 -brute force
+    // 1 - Brute Force
     double total_time_bf = 0;
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "Brute force postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
@@ -194,10 +179,11 @@ int main() {
         outFile << "BruteForce," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
     }
     if (cfg.showProgress) std::cout << "\n";
-    int bf_best_cost = best_cost;
+    int bf_best_cost = best_cost; // Запоминаем идеальную стоимость для расчета ошибки
     std::cout << "Brute Force: Koszt = " << best_cost << ", Sredni czas = " << total_time_bf / cfg.repetitions << " ms\n\n";
+    
 
-    // 2 - nearest neighbor
+    // 2 - Nearest Neighbor
     double total_time_nn = 0;
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "Nearest neighbor postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
@@ -212,7 +198,7 @@ int main() {
     std::cout << "Nearest Neighbor: Koszt = " << best_cost << ", Sredni czas = " << total_time_nn / cfg.repetitions << " ms\n";
     std::cout << "Blad wzgledny NN = " << std::fixed << std::setprecision(2) << relativeError(best_cost, bf_best_cost) << " %\n\n";
 
-    // 3 - rnn
+    // 3 - RNN
     double total_time_rnn = 0;
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "RNN postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
@@ -227,14 +213,14 @@ int main() {
     std::cout << "RNN: Koszt = " << best_cost << ", Sredni czas = " << total_time_rnn / cfg.repetitions << " ms\n";
     std::cout << "Blad wzgledny RNN = " << std::fixed << std::setprecision(2) << relativeError(best_cost, bf_best_cost) << " %\n\n";
 
-    // 4 - random walk
+    // 4 - Random Walk
     double total_time_rnd = 0;
     int best_rnd_cost = INT_MAX;
 
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) std::cout << "Random postep: " << i + 1 << "/" << cfg.repetitions << "\r" << std::flush;
         auto start = std::chrono::high_resolution_clock::now();
-        best_cost = tsp.randomWalk(best_path, cfg.randIterations); // przekazujemy ilosc iteracji z configu
+        best_cost = tsp.randomWalk(best_path, cfg.randIterations);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         total_time_rnd += duration.count();

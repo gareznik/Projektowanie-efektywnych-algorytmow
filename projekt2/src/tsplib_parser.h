@@ -19,32 +19,36 @@ public:
         std::string line;
         int dimension = 0;
 
-        // Пропускаем пустые строки и BOM
         while (std::getline(file, line)) {
             if (line.size() >= 3 && (unsigned char)line[0] == 0xEF) line = line.substr(3);
             if (!line.empty() && line.find_first_not_of(" \r\n\t") != std::string::npos) break;
         }
 
-        // Если нет ключевых слов TSPLIB - это простой формат (число N и матрица)
         if (line.find("NAME") == std::string::npos && line.find("TYPE") == std::string::npos && line.find("DIMENSION") == std::string::npos) {
             dimension = std::stoi(line);
             return parseSimpleMatrix(file, dimension);
         }
 
-        // Иначе парсим TSPLIB
         std::string weight_type = "";
+        std::string weight_format = "FULL_MATRIX"; // По умолчанию считаем, что матрица полная
+        
         file.seekg(0);
         while (std::getline(file, line)) {
             if (line.find("DIMENSION") != std::string::npos) {
-                size_t pos = line.find(":");
-                dimension = std::stoi(line.substr(pos + 1));
+                dimension = std::stoi(line.substr(line.find(":") + 1));
             } else if (line.find("EDGE_WEIGHT_TYPE") != std::string::npos) {
-                size_t pos = line.find(":");
-                weight_type = line.substr(pos + 1);
-                weight_type.erase(0, weight_type.find_first_not_of(" \t"));
-                weight_type.erase(weight_type.find_last_not_of(" \t\r\n") + 1);
+                weight_type = extractValue(line);
+            } else if (line.find("EDGE_WEIGHT_FORMAT") != std::string::npos) {
+                weight_format = extractValue(line);
             } else if (line.find("EDGE_WEIGHT_SECTION") != std::string::npos) {
-                return parseSimpleMatrix(file, dimension);
+                
+                // МАГИЯ ЗДЕСЬ: Выбираем, как читать матрицу!
+                if (weight_format == "LOWER_DIAG_ROW") {
+                    return parseLowerDiagRow(file, dimension);
+                } else {
+                    return parseSimpleMatrix(file, dimension);
+                }
+                
             } else if (line.find("NODE_COORD_SECTION") != std::string::npos) {
                 return parseCoordinates(file, dimension, weight_type);
             }
@@ -53,11 +57,38 @@ public:
     }
 
 private:
+    static std::string extractValue(const std::string& line) {
+        std::string val = line.substr(line.find(":") + 1);
+        val.erase(0, val.find_first_not_of(" \t"));
+        val.erase(val.find_last_not_of(" \t\r\n") + 1);
+        return val;
+    }
+
     static std::vector<std::vector<int>> parseSimpleMatrix(std::ifstream& file, int dimension) {
         std::vector<std::vector<int>> matrix(dimension, std::vector<int>(dimension));
         for (int i = 0; i < dimension; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 if (!(file >> matrix[i][j])) break;
+                if (i == j && matrix[i][j] == 0) matrix[i][j] = -1; // Если на диагонали 0, меняем на -1 для безопасности
+            }
+        }
+        return matrix;
+    }
+
+    // НОВЫЙ МЕТОД ДЛЯ ТВОЕГО ФАЙЛА gr17.tsp
+    static std::vector<std::vector<int>> parseLowerDiagRow(std::ifstream& file, int dimension) {
+        std::vector<std::vector<int>> matrix(dimension, std::vector<int>(dimension, 0));
+        for (int i = 0; i < dimension; ++i) {
+            for (int j = 0; j <= i; ++j) { // Читаем только до диагонали (включительно)
+                int val;
+                if (file >> val) {
+                    if (i == j) {
+                        matrix[i][j] = -1; // На диагонали (0) ставим -1 (бесконечность)
+                    } else {
+                        matrix[i][j] = val; // Записываем путь туда
+                        matrix[j][i] = val; // ЗЕРКАЛИМ путь обратно!
+                    }
+                }
             }
         }
         return matrix;
@@ -79,7 +110,7 @@ private:
                         double rij = std::sqrt((xd * xd + yd * yd) / 10.0);
                         int tij = (int)std::round(rij);
                         matrix[i][j] = (tij < rij) ? tij + 1 : tij;
-                    } else { // EUC_2D и другие
+                    } else { 
                         matrix[i][j] = (int)std::round(std::sqrt(xd * xd + yd * yd));
                     }
                 }

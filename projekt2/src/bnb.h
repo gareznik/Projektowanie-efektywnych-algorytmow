@@ -21,6 +21,7 @@ private:
     std::vector<std::vector<int>> matrix;
     int num_vertices;
     int time_limit_s;
+    bool show_progress;
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 
     bool isTimeUp() {
@@ -52,8 +53,8 @@ private:
     }
 
 public:
-    BranchAndBound(const std::vector<std::vector<int>>& adj_matrix, int limit_s) 
-        : matrix(adj_matrix), num_vertices(adj_matrix.size()), time_limit_s(limit_s) {}
+    BranchAndBound(const std::vector<std::vector<int>>& adj_matrix, int limit_s, bool progress) 
+        : matrix(adj_matrix), num_vertices(adj_matrix.size()), time_limit_s(limit_s), show_progress(progress) {}
 
     int solve(int strategy) {
         start_time = std::chrono::high_resolution_clock::now();
@@ -82,7 +83,12 @@ private:
 
             if (current.level == num_vertices) {
                 int final_cost = current.cost + matrix[current.path.back()][0];
-                if (final_cost < best_cost) best_cost = final_cost;
+                if (final_cost < best_cost) {
+                    best_cost = final_cost;
+                    if (show_progress) {
+                        std::cout << "  [Progress] Znaleziono lepszą transe! Nowy koszt: " << best_cost << "\n";
+                    }
+                }
                 continue;
             }
 
@@ -109,7 +115,12 @@ private:
 
             if (current.level == num_vertices) {
                 int final_cost = current.cost + matrix[current.path.back()][0];
-                if (final_cost < best_cost) best_cost = final_cost;
+                if (final_cost < best_cost) {
+                    best_cost = final_cost;
+                    if (show_progress) {
+                        std::cout << "  [Progress] Znaleziono lepszą transe! Nowy koszt: " << best_cost << "\n";
+                    }
+                }
                 continue;
             }
 
@@ -136,7 +147,12 @@ private:
 
             if (current.level == num_vertices) {
                 int final_cost = current.cost + matrix[current.path.back()][0];
-                if (final_cost < best_cost) best_cost = final_cost;
+                if (final_cost < best_cost) {
+                    best_cost = final_cost;
+                    if (show_progress) {
+                        std::cout << "  [Progress] Znaleziono lepszą transe! Nowy koszt: " << best_cost << "\n";
+                    }
+                }
                 continue;
             }
 

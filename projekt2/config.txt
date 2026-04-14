@@ -2,11 +2,11 @@
 use_generator=0
 
 # Sciezki do plikow
-input_file=input/matrix_6x6.atsp
+input_file=input\ulysses11.tsp
 output_file=output/results.csv
 
 # Ustawienia
 instance_size=10
-repetitions=10
+repetitions=5
 time_limit_s=300
 show_progress=1
