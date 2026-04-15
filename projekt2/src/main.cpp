@@ -152,8 +152,6 @@ int main() {
 
     cout << "--- Rozpoczynamy testy algorytmow ---\n\n";
 
-    // UWAGA: Przekazujemy 'false' jako trzeci parametr, aby bnb.h nie spamił w konsoli, 
-    // robimy pasek postępu tutaj, tak jak w projekt 1.
     BranchAndBound bnb(matrix, cfg.timeLimitS, false);
     string algos[] = {"", "BFS", "DFS", "LowestCost"};
 
@@ -184,7 +182,6 @@ int main() {
             best_cost = cost;
             total_time += duration.count();
             
-            // Zapis w CSV (z przecinkami, jak w pierwszym projekcie)
             outFile << algos[s] << "," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
         }
 

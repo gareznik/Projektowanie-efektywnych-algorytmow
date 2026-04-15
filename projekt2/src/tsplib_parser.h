@@ -30,8 +30,7 @@ public:
         }
 
         std::string weight_type = "";
-        std::string weight_format = "FULL_MATRIX"; // По умолчанию считаем, что матрица полная
-        
+        std::string weight_format = "FULL_MATRIX";
         file.seekg(0);
         while (std::getline(file, line)) {
             if (line.find("DIMENSION") != std::string::npos) {
@@ -42,7 +41,6 @@ public:
                 weight_format = extractValue(line);
             } else if (line.find("EDGE_WEIGHT_SECTION") != std::string::npos) {
                 
-                // МАГИЯ ЗДЕСЬ: Выбираем, как читать матрицу!
                 if (weight_format == "LOWER_DIAG_ROW") {
                     return parseLowerDiagRow(file, dimension);
                 } else {
@@ -69,24 +67,23 @@ private:
         for (int i = 0; i < dimension; ++i) {
             for (int j = 0; j < dimension; ++j) {
                 if (!(file >> matrix[i][j])) break;
-                if (i == j && matrix[i][j] == 0) matrix[i][j] = -1; // Если на диагонали 0, меняем на -1 для безопасности
+                if (i == j && matrix[i][j] == 0) matrix[i][j] = -1;
             }
         }
         return matrix;
     }
 
-    // НОВЫЙ МЕТОД ДЛЯ ТВОЕГО ФАЙЛА gr17.tsp
     static std::vector<std::vector<int>> parseLowerDiagRow(std::ifstream& file, int dimension) {
         std::vector<std::vector<int>> matrix(dimension, std::vector<int>(dimension, 0));
         for (int i = 0; i < dimension; ++i) {
-            for (int j = 0; j <= i; ++j) { // Читаем только до диагонали (включительно)
+            for (int j = 0; j <= i; ++j) {
                 int val;
                 if (file >> val) {
                     if (i == j) {
-                        matrix[i][j] = -1; // На диагонали (0) ставим -1 (бесконечность)
+                        matrix[i][j] = -1;
                     } else {
-                        matrix[i][j] = val; // Записываем путь туда
-                        matrix[j][i] = val; // ЗЕРКАЛИМ путь обратно!
+                        matrix[i][j] = val; 
+                        matrix[j][i] = val;
                     }
                 }
             }
