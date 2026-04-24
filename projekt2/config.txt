@@ -10,3 +10,6 @@ instance_size=10
 repetitions=5
 time_limit_s=300
 show_progress=1
+
+# Górne ograniczenie: 0 = brak(INF), 1 = Random, 2 = NN, 3 = RNN, 4 - RNN z remisami
+upper_bound_strategy=4

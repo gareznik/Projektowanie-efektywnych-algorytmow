@@ -15,13 +15,14 @@
 using namespace std;
 
 struct Config {
-    int useGenerator = 1; // 0 - z pliku, 1 - losowa ATSP, 2 - losowa STSP
+    int useGenerator = 1; 
     string inputFile;
     string outputFile;
     int repetitions = 1;
     int instanceSize = 0;
     int timeLimitS = 300;
     bool showProgress = false;
+    int upperBoundStrategy = 4;
 };
 
 Config readConfig(const string& filename) {
@@ -53,6 +54,7 @@ Config readConfig(const string& filename) {
                 else if (key == "instance_size") cfg.instanceSize = stoi(value);
                 else if (key == "time_limit_s") cfg.timeLimitS = stoi(value);
                 else if (key == "show_progress") cfg.showProgress = (value == "1");
+                else if (key == "upper_bound_strategy") cfg.upperBoundStrategy = stoi(value);
             }
         }
     }
@@ -87,7 +89,7 @@ vector<vector<int>> generateRandomSTSP(int size) {
             } else {
                 int cost = dist(gen);
                 matrix[i][j] = cost;
-                matrix[j][i] = cost; // symetryczna macierz
+                matrix[j][i] = cost; 
             }
         }
     }
@@ -97,13 +99,12 @@ vector<vector<int>> generateRandomSTSP(int size) {
 SIZE_T getMemoryUsage() {
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-        return pmc.WorkingSetSize / 1024; // wynik w KB
+        return pmc.PeakWorkingSetSize / 1024; 
     }
     return 0;
 }
 
 int main() {
-    // Przypięcie do 1 rdzenia
     SetProcessAffinityMask(GetCurrentProcess(), 1);
 
     string configPath = "config.txt"; 
@@ -117,12 +118,10 @@ int main() {
         cout << "Tryb: Generowanie losowej macierzy ATSP.\n";
         cout << "Rozmiar instancji: " << cfg.instanceSize << "x" << cfg.instanceSize << "\n";
         matrix = generateRandomATSP(cfg.instanceSize);
-
     } else if (cfg.useGenerator == 2) {
         cout << "Tryb: Generowanie losowej macierzy STSP.\n";
         cout << "Rozmiar instancji: " << cfg.instanceSize << "x" << cfg.instanceSize << "\n";
         matrix = generateRandomSTSP(cfg.instanceSize);
-
     } else {
         cout << "Tryb: Wczytywanie macierzy z pliku.\n";
         cout << "Plik wejsciowy: " << cfg.inputFile << "\n";
@@ -152,11 +151,13 @@ int main() {
 
     cout << "--- Rozpoczynamy testy algorytmow ---\n\n";
 
-    BranchAndBound bnb(matrix, cfg.timeLimitS, false);
     string algos[] = {"", "BFS", "DFS", "LowestCost"};
+
+    SIZE_T memory_baseline = getMemoryUsage();
 
     for (int s = 1; s <= 3; ++s) {
         double total_time = 0;
+        double total_memory = 0;
         int best_cost = 0;
         bool timeout = false;
 
@@ -164,16 +165,20 @@ int main() {
             if (cfg.showProgress) {
                 cout << algos[s] << " postep: " << i + 1 << "/" << cfg.repetitions << "\r" << flush;
             }
+
+            BranchAndBound bnb(matrix, cfg.timeLimitS, false, cfg.upperBoundStrategy);
             
             auto start = chrono::high_resolution_clock::now();
             int cost = bnb.solve(s);
             auto end = chrono::high_resolution_clock::now();
             
+            SIZE_T current_mem = getMemoryUsage();
+            
             chrono::duration<double, milli> duration = end - start;
 
             if (cost == -1) {
                 timeout = true;
-                outFile << algos[s] << "," << matrix.size() << "," << i + 1 << ",TIMEOUT," << duration.count() << "\n";
+                outFile << algos[s] << "," << matrix.size() << "," << i + 1 << ",TIMEOUT," << duration.count() << "," << current_mem << "\n";
                 if (cfg.showProgress) cout << "\n";
                 cout << algos[s] << " -> TIMEOUT (> " << cfg.timeLimitS << "s)\n\n";
                 break; 
@@ -181,22 +186,21 @@ int main() {
 
             best_cost = cost;
             total_time += duration.count();
+            total_memory += current_mem;
             
-            outFile << algos[s] << "," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "\n";
+            outFile << algos[s] << "," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "," << current_mem << "\n";
         }
 
         if (!timeout) {
             if (cfg.showProgress) cout << "\n";
-            cout << algos[s] << ": Koszt = " << best_cost << ", Sredni czas = " << total_time / cfg.repetitions << " ms\n\n";
+            cout << algos[s] << ": Koszt = " << best_cost 
+                 << ", Sredni czas = " << total_time / cfg.repetitions << " ms"
+                 << ", Srednia pamiec = " << total_memory / cfg.repetitions << " KB\n\n";
         }
     }
 
     outFile.close();
     cout << "Testy zakonczone. Wyniki w: " << cfg.outputFile << "\n\n";
-
-    cout << "========================================\n";
-    cout << "Zajeta pamiec (RAM): " << getMemoryUsage() << " KB\n";
-    cout << "========================================\n\n";
 
     return 0;
 }
