@@ -2,13 +2,13 @@
 use_generator=0
 
 # Sciezki do plikow
-input_file=input\ulysses11.tsp
-output_file=output/results.csv
+input_file=input/tsplib\p43.atsp
+output_file=output/TSPLIB_p43.atsp_strat_4.csv
 
 # Ustawienia
-instance_size=10
-repetitions=5
-time_limit_s=300
+instance_size=0
+repetitions=1
+time_limit_s=900
 show_progress=1
 
 # Górne ograniczenie: 0 = brak(INF), 1 = Random, 2 = NN, 3 = RNN, 4 - RNN z remisami

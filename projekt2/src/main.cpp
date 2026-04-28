@@ -8,7 +8,8 @@
 #include <random>
 #include <windows.h>
 #include <psapi.h>
-
+#include <thread>
+#include <atomic>
 #include "tsplib_parser.h"
 #include "bnb.h"
 
@@ -96,12 +97,25 @@ vector<vector<int>> generateRandomSTSP(int size) {
     return matrix;
 }
 
+std::atomic<bool> is_solving(false);
+std::atomic<SIZE_T> current_peak_memory(0);
+
 SIZE_T getMemoryUsage() {
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-        return pmc.PeakWorkingSetSize / 1024; 
+        return pmc.PagefileUsage / 1024;
     }
     return 0;
+}
+
+void memoryMonitor() {
+    while (is_solving) {
+        SIZE_T current_mem = getMemoryUsage();
+        if (current_mem > current_peak_memory) {
+            current_peak_memory = current_mem;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // опрашиваем каждую миллисекунду
+    }
 }
 
 int main() {
@@ -155,7 +169,7 @@ int main() {
 
     SIZE_T memory_baseline = getMemoryUsage();
 
-    for (int s = 1; s <= 3; ++s) {
+    for (int s = 2; s <= 3; ++s) {
         double total_time = 0;
         double total_memory = 0;
         int best_cost = 0;
@@ -167,18 +181,29 @@ int main() {
             }
 
             BranchAndBound bnb(matrix, cfg.timeLimitS, false, cfg.upperBoundStrategy);
+
+            SIZE_T baseline_mem = getMemoryUsage();
+            current_peak_memory = baseline_mem;
+            is_solving = true;
+            std::thread monitor(memoryMonitor);
             
             auto start = chrono::high_resolution_clock::now();
             int cost = bnb.solve(s);
             auto end = chrono::high_resolution_clock::now();
             
-            SIZE_T current_mem = getMemoryUsage();
+            is_solving = false;
+            monitor.join();
+
+            SIZE_T memory_used = 0;
+            if (current_peak_memory > baseline_mem) {
+                memory_used = current_peak_memory - baseline_mem;
+            }
             
             chrono::duration<double, milli> duration = end - start;
 
             if (cost == -1) {
                 timeout = true;
-                outFile << algos[s] << "," << matrix.size() << "," << i + 1 << ",TIMEOUT," << duration.count() << "," << current_mem << "\n";
+                outFile << algos[s] << "," << matrix.size() << "," << i + 1 << ",TIMEOUT," << duration.count() << "," << memory_used << "\n";
                 if (cfg.showProgress) cout << "\n";
                 cout << algos[s] << " -> TIMEOUT (> " << cfg.timeLimitS << "s)\n\n";
                 break; 
@@ -186,16 +211,16 @@ int main() {
 
             best_cost = cost;
             total_time += duration.count();
-            total_memory += current_mem;
+            total_memory += memory_used;
             
-            outFile << algos[s] << "," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "," << current_mem << "\n";
+            outFile << algos[s] << "," << matrix.size() << "," << i + 1 << "," << best_cost << "," << duration.count() << "," << memory_used << "\n";
         }
 
         if (!timeout) {
             if (cfg.showProgress) cout << "\n";
             cout << algos[s] << ": Koszt = " << best_cost 
-                 << ", Sredni czas = " << total_time / cfg.repetitions << " ms"
-                 << ", Srednia pamiec = " << total_memory / cfg.repetitions << " KB\n\n";
+                 << ", Sredni czas = " << fixed << setprecision(2) << (total_time / cfg.repetitions) << " ms"
+                 << ", Srednia pamiec = " << fixed << setprecision(2) << (total_memory / cfg.repetitions) << " KB\n\n";
         }
     }
 

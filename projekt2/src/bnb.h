@@ -36,7 +36,7 @@ private:
         return elapsed.count() > time_limit_s;
     }
 
-    int getRandomUpperBound(int iterations = 1000) {
+    int getRandomUpperBound(int iterations = 100000) {
         int min_cost = INT_MAX;
         std::vector<int> path(num_vertices);
         std::iota(path.begin(), path.end(), 0);
