@@ -40,8 +40,11 @@
 # debug information files
 *.dwo
 
-.tsp
-.atsp
-.tar
-.gz
-.csv
+*.tsp
+*.atsp
+*.tar
+*.gz
+*.csv
+
+*.exe
+*.env
