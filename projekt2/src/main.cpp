@@ -114,7 +114,7 @@ void memoryMonitor() {
         if (current_mem > current_peak_memory) {
             current_peak_memory = current_mem;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // опрашиваем каждую миллисекунду
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
@@ -169,7 +169,7 @@ int main() {
 
     SIZE_T memory_baseline = getMemoryUsage();
 
-    for (int s = 2; s <= 3; ++s) {
+    for (int s = 1; s <= 3; ++s) {
         double total_time = 0;
         double total_memory = 0;
         int best_cost = 0;

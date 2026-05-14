@@ -1,0 +1,27 @@
+# --- Podstawowe parametry ---
+# GENERATOR: 0 = czytaj z pliku, 1 = generuj losowa ATSP, 2 = generuj losowa STSP
+use_generator=1
+instance_size=20
+
+input_file=input/atsp/br17.atsp
+output_file=output/results2.csv
+repetitions=10
+time_limit_s=300
+show_progress=1
+
+# --- Parametry SA ---
+
+# 1. Dlugosc epoki (wplyw na czas i blad)
+epoch_length=1000
+
+# 2. Wspolczynnik chlodzenia
+alpha=0.99
+
+# 3. Schemat chlodzenia: 0 = geometryczne (T *= alpha), 1 = linearne (T -= alpha)
+cooling_scheme=0
+
+# 4. Wplyw UB: 1 = start z rozwiazania Nearest Neighbor (UB), 0 = losowy start
+use_ub=0
+
+# 5. Temperatura poczatkowa: 0.0 = automatyczne wyliczenie ze wzoru, np. 1000.0 = stala wartosc
+initial_temp=0
