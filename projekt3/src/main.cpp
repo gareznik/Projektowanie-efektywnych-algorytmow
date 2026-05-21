@@ -71,16 +71,16 @@ vector<vector<int>> generateMatrix(int size, int type) {
     vector<vector<int>> matrix(size, vector<int>(size));
     random_device rd;
     mt19937 gen(rd());
-    uniform_int_distribution<> dist(1, 1000); // Dystans od 1 do 1000
+    uniform_int_distribution<> dist(1, 1000); 
 
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < size; ++j) {
             if (i == j) {
-                matrix[i][j] = -1; // Odległość do samego siebie
+                matrix[i][j] = -1; 
             } else {
-                if (type == 1) { // ATSP (asymetryczny)
+                if (type == 1) { 
                     matrix[i][j] = dist(gen);
-                } else if (type == 2) { // STSP (symetryczny)
+                } else if (type == 2) { 
                     if (i < j) {
                         matrix[i][j] = dist(gen);
                     } else {
@@ -108,7 +108,6 @@ int main() {
 
     string instName;
 
-    // Wybór: plik lub generator
     if (cfg.useGenerator == 0) {
         matrix = TSPLibParser::loadMatrix(cfg.inputFile);
         instName = cfg.inputFile.substr(cfg.inputFile.find_last_of("/\\") + 1);
@@ -127,34 +126,33 @@ int main() {
 
     SimulatedAnnealing sa(matrix);
     int lb_mst = sa.computeMSTLowerBound();
-    int initial_cost = sa.getCost(cfg.useUB ? sa.generateRNNPath() : vector<int>(matrix.size(), 0));
-
     cout << "Lower Bound (MST): " << lb_mst << "\n";
-    cout << "Starting cost (UB=" << cfg.useUB << "): " << initial_cost << "\n";
+    if (cfg.useUB) {
+        cout << "Starting cost (UB=1): " << sa.getCost(sa.generateRNNPath()) << "\n";
+    } else {
+        cout << "Starting cost (UB=0): Losowy (dla każdego powtórzenia)\n";
+    }
 
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) cout << "Postep: " << i + 1 << "/" << cfg.repetitions << "\r" << flush;
 
-        // NOWE: Wektor do zbierania śladu (historii)
         vector<TracePoint> trace;
         
         auto start = chrono::high_resolution_clock::now();
-        // Przekazujemy wskaźnik na trace tylko wtedy, gdy jest to PIERWSZE powtórzenie (i==0) i flaga jest włączona
-        int best_cost = sa.solve(cfg.timeLimitS, cfg.epochLength, cfg.alpha, cfg.coolingScheme, cfg.useUB, cfg.initialTemp, (cfg.saveTrace && i == 0) ? &trace : nullptr);
+        int initial_cost_for_run = 0;
+        int best_cost = sa.solve(cfg.timeLimitS, cfg.epochLength, cfg.alpha, cfg.coolingScheme, cfg.useUB, cfg.initialTemp, (cfg.saveTrace && i == 0) ? &trace : nullptr, &initial_cost_for_run);
         auto end = chrono::high_resolution_clock::now();
         
         SIZE_T current_mem = getMemoryUsage();
         chrono::duration<double, milli> duration = end - start;
-        
-        // Zapis do głównego pliku results.csv (Pozostaje bez zmian!)
+
         outFile << instName << "," << matrix.size() << "," << i + 1 << "," 
                 << (cfg.coolingScheme == 0 ? "Geometric" : "Linear") << "," 
                 << (cfg.useUB ? "Yes" : "No") << "," 
                 << cfg.epochLength << "," << cfg.alpha << "," << cfg.initialTemp << ","
-                << lb_mst << "," << initial_cost << "," << best_cost << "," 
+                << lb_mst << "," << initial_cost_for_run << "," << best_cost << "," 
                 << duration.count() << "," << current_mem << "\n";
 
-        // NOWE: Zapis historii do OSOBNEGO pliku (zgodnie z prośbą prowadzącego)
         if (cfg.saveTrace && i == 0) {
             string traceFile = "output/trace_" + instName + ".csv";
             ofstream tFile(traceFile);
@@ -163,7 +161,6 @@ int main() {
                 tFile << tp.time_ms << "," << tp.current_cost << "," << tp.best_cost << "," << tp.temperature << "\n";
             }
             tFile.close();
-            if (cfg.showProgress) cout << "\nZapisano historie zbieznosci do: " << traceFile << "\n";
         }
     }
     

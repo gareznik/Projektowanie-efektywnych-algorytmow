@@ -1,10 +1,10 @@
 # --- Podstawowe parametry ---
 # GENERATOR: 0 = czytaj z pliku, 1 = generuj losowa ATSP, 2 = generuj losowa STSP
-use_generator=1
+use_generator=0
 instance_size=20
 
-input_file=input/atsp/br17.atsp
-output_file=output/results2.csv
+input_file=input\ulysses16.tsp
+output_file=output/results.csv
 repetitions=10
 time_limit_s=300
 show_progress=1
@@ -26,4 +26,5 @@ use_ub=0
 # 5. Temperatura poczatkowa: 0.0 = automatyczne wyliczenie ze wzoru, np. 1000.0 = stala wartosc
 initial_temp=0
 
+# 6. Zapisywanie historii algorytmu (trace) do pliku CSV: 0 = nie zapisywac, 1 = zapisywac
 save_trace=1
