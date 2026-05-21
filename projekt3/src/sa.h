@@ -7,6 +7,13 @@
 #include <algorithm>
 #include <iostream>
 
+struct TracePoint {
+    double time_ms;
+    int current_cost;
+    int best_cost;
+    double temperature;
+};
+
 class SimulatedAnnealing {
 private:
     const std::vector<std::vector<int>>& matrix;
@@ -131,7 +138,7 @@ public:
 
     // Главный метод Отжига
     // cooling_scheme: 0 - Геометрическое (T *= alpha), 1 - Линейное (T -= alpha)
-    int solve(int time_limit_s, int epoch_length, double alpha, int cooling_scheme, bool use_ub, double init_temp_param) {
+    int solve(int time_limit_s, int epoch_length, double alpha, int cooling_scheme, bool use_ub, double init_temp_param, std::vector<TracePoint>* trace = nullptr) {
         auto start_time = std::chrono::high_resolution_clock::now();
         
         std::vector<int> current_path;
@@ -180,6 +187,12 @@ public:
                         best_cost = current_cost;
                     }
                 }
+            }
+
+            if (trace != nullptr) {
+                auto trace_time = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double, std::milli> elapsed_ms = trace_time - start_time;
+                trace->push_back({elapsed_ms.count(), current_cost, best_cost, T});
             }
 
             // Охлаждение

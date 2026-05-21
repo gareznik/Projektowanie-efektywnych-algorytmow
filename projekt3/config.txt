@@ -25,3 +25,5 @@ use_ub=0
 
 # 5. Temperatura poczatkowa: 0.0 = automatyczne wyliczenie ze wzoru, np. 1000.0 = stala wartosc
 initial_temp=0
+
+save_trace=1

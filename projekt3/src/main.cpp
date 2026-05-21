@@ -29,6 +29,8 @@ struct Config {
     int coolingScheme = 0; 
     int useUB = 1;         
     double initialTemp = 0.0; 
+
+    int saveTrace = 0; // 0 - не сохранять, 1 - сохранять   
 };
 
 Config readConfig(const string& filename) {
@@ -128,23 +130,40 @@ int main() {
 
     cout << "Lower Bound (MST): " << lb_mst << "\n";
     cout << "Starting cost (UB=" << cfg.useUB << "): " << initial_cost << "\n";
-    
+
     for (int i = 0; i < cfg.repetitions; ++i) {
         if (cfg.showProgress) cout << "Postep: " << i + 1 << "/" << cfg.repetitions << "\r" << flush;
 
+        // НОВОЕ: Вектор для сбора следа (истории)
+        vector<TracePoint> trace;
+        
         auto start = chrono::high_resolution_clock::now();
-        int best_cost = sa.solve(cfg.timeLimitS, cfg.epochLength, cfg.alpha, cfg.coolingScheme, cfg.useUB, cfg.initialTemp);
+        // Передаем указатель на trace только если это ПЕРВОЕ повторение (i==0) и флаг включен
+        int best_cost = sa.solve(cfg.timeLimitS, cfg.epochLength, cfg.alpha, cfg.coolingScheme, cfg.useUB, cfg.initialTemp, (cfg.saveTrace && i == 0) ? &trace : nullptr);
         auto end = chrono::high_resolution_clock::now();
         
         SIZE_T current_mem = getMemoryUsage();
         chrono::duration<double, milli> duration = end - start;
         
+        // Запись в главный results.csv (Остается без изменений!)
         outFile << instName << "," << matrix.size() << "," << i + 1 << "," 
                 << (cfg.coolingScheme == 0 ? "Geometric" : "Linear") << "," 
                 << (cfg.useUB ? "Yes" : "No") << "," 
                 << cfg.epochLength << "," << cfg.alpha << "," << cfg.initialTemp << ","
                 << lb_mst << "," << initial_cost << "," << best_cost << "," 
                 << duration.count() << "," << current_mem << "\n";
+
+        // НОВОЕ: Запись истории в ОТДЕЛЬНЫЙ файл (как просит препод)
+        if (cfg.saveTrace && i == 0) {
+            string traceFile = "output/trace_" + instName + ".csv";
+            ofstream tFile(traceFile);
+            tFile << "Time(ms),CurrentCost,BestCost,Temperature\n";
+            for (const auto& tp : trace) {
+                tFile << tp.time_ms << "," << tp.current_cost << "," << tp.best_cost << "," << tp.temperature << "\n";
+            }
+            tFile.close();
+            if (cfg.showProgress) cout << "\nZapisano historie zbieznosci do: " << traceFile << "\n";
+        }
     }
     
     cout << "\nTesty zakonczone. Wyniki zapisane w: " << cfg.outputFile << "\n";
