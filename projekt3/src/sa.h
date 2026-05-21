@@ -26,7 +26,7 @@ public:
         rng.seed(rd());
     }
 
-    // Вычисление стоимости маршрута
+    // Obliczanie kosztu trasy
     int getCost(const std::vector<int>& path) {
         int cost = 0;
         for (int i = 0; i < n - 1; ++i) {
@@ -39,9 +39,9 @@ public:
    // Upper Bound (UB) - Repetitive Nearest Neighbor (RNN)
     std::vector<int> generateRNNPath() {
         std::vector<int> best_overall_path;
-        int best_overall_cost = 2e9; // Условная бесконечность
+        int best_overall_cost = 2e9; // Umowna nieskończoność
 
-        // Пробуем стартовать жадный алгоритм из КАЖДОГО города
+        // Próbujemy wystartować algorytm zachłanny z KAŻDEGO miasta
         for (int start_city = 0; start_city < n; ++start_city) {
             std::vector<int> path(n);
             std::vector<bool> visited(n, false);
@@ -58,7 +58,7 @@ public:
                         next = j;
                     }
                 }
-                if (next == -1) { // Fallback, если граф не полносвязный
+                if (next == -1) { // Fallback, jeśli graf nie jest spójny
                     for (int j = 0; j < n; ++j) {
                         if (!visited[j]) { next = j; break; }
                     }
@@ -68,10 +68,10 @@ public:
                 current = next;
             }
 
-            // Оцениваем получившийся маршрут
+            // Oceniamy otrzymaną trasę
             int current_cost = getCost(path);
             
-            // Запоминаем, если этот маршрут лучше предыдущих
+            // Zapamiętujemy, jeśli ta trasa jest lepsza od poprzednich
             if (current_cost < best_overall_cost) {
                 best_overall_cost = current_cost;
                 best_overall_path = path;
@@ -79,7 +79,7 @@ public:
         }
         return best_overall_path;
     }
-    // Lower Bound (LB) - Минимальное остовное дерево (MST, алгоритм Прима)
+    // Lower Bound (LB) - Minimalne drzewo rozpinające (MST, algorytm Prima)
     int computeMSTLowerBound() {
         std::vector<int> min_e(n, 1e9);
         std::vector<bool> in_mst(n, false);
@@ -91,13 +91,13 @@ public:
             for (int j = 0; j < n; ++j) {
                 if (!in_mst[j] && (u == -1 || min_e[j] < min_e[u])) u = j;
             }
-            if (min_e[u] == 1e9) break; // Несвязный граф
+            if (min_e[u] == 1e9) break; // Niespójny graf
             in_mst[u] = true;
             mst_cost += min_e[u];
 
             for (int v = 0; v < n; ++v) {
                 if (!in_mst[v] && matrix[u][v] != -1) {
-                    // Для ATSP берем минимальное ребро между (u,v) и (v,u)
+                    // Dla ATSP bierzemy minimalną krawędź między (u,v) i (v,u)
                     int edge_weight = matrix[u][v];
                     if (matrix[v][u] != -1) {
                         edge_weight = std::min(edge_weight, matrix[v][u]);
@@ -109,8 +109,8 @@ public:
         return mst_cost;
     }
 
-    // Автоматический расчет начальной температуры (требование задания)
-    // Проводим серию случайных мутаций и смотрим на среднее ухудшение результата
+    // Automatyczne obliczanie temperatury początkowej (wymóg zadania)
+    // Przeprowadzamy serię losowych mutacji i patrzymy na średnie pogorszenie wyniku
     double calculateInitialTemperature(const std::vector<int>& initial_path, double init_prob = 0.99) {
         int current_cost = getCost(initial_path);
         double delta_sum = 0.0;
@@ -131,19 +131,19 @@ public:
             }
         }
 
-        if (positive_deltas == 0) return 1000.0; // Защита от деления на 0
+        if (positive_deltas == 0) return 1000.0; // Zabezpieczenie przed dzieleniem przez 0
         double avg_delta = delta_sum / positive_deltas;
         return -avg_delta / std::log(init_prob);
     }
 
-    // Главный метод Отжига
-    // cooling_scheme: 0 - Геометрическое (T *= alpha), 1 - Линейное (T -= alpha)
+    // Główna metoda algorytmu wyżarzania
+    // cooling_scheme: 0 - Geometryczne (T *= alpha), 1 - Liniowe (T -= alpha)
     int solve(int time_limit_s, int epoch_length, double alpha, int cooling_scheme, bool use_ub, double init_temp_param, std::vector<TracePoint>* trace = nullptr) {
         auto start_time = std::chrono::high_resolution_clock::now();
         
         std::vector<int> current_path;
         if (use_ub) {
-            current_path = generateRNNPath(); // <-- ТЕПЕРЬ ТУТ ИСПОЛЬЗУЕМ RNN
+            current_path = generateRNNPath(); // <-- TERAZ TUTAJ UŻYWAMY RNN
         } else {
             current_path.resize(n);
             std::iota(current_path.begin(), current_path.end(), 0);
@@ -154,30 +154,30 @@ public:
         std::vector<int> best_path = current_path;
         int best_cost = current_cost;
 
-        // Определяем начальную температуру: заданная вручную или вычисленная
+        // Określamy temperaturę początkową: podaną ręcznie lub obliczoną
         double T = init_temp_param > 0 ? init_temp_param : calculateInitialTemperature(current_path);
         double T_min = 0.001;
 
-        std::uniform_int_distribution<int> dist(1, n - 1); // Не меняем позицию стартового города (0)
+        std::uniform_int_distribution<int> dist(1, n - 1); // Nie zmieniamy pozycji miasta startowego (0)
         std::uniform_real_distribution<double> prob(0.0, 1.0);
 
         while (T > T_min) {
             auto current_time = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = current_time - start_time;
-            if (elapsed.count() > time_limit_s) break; // Остановка по ограничению времени
+            if (elapsed.count() > time_limit_s) break; // Zatrzymanie po przekroczeniu limitu czasu
 
-            // Эпоха - количество итераций на одной температуре
+            // Epoka - liczba iteracji w jednej temperaturze
             for (int i = 0; i < epoch_length; ++i) {
                 std::vector<int> neighbor = current_path;
                 int u = dist(rng), v = dist(rng);
                 while (u == v) v = dist(rng);
                 
-                // Операция SWAP (обмен двух городов местами)
+                // Operacja SWAP (zamiana miejscami dwóch miast)
                 std::swap(neighbor[u], neighbor[v]);
                 int neighbor_cost = getCost(neighbor);
                 int delta = neighbor_cost - current_cost;
 
-                // Если решение лучше (delta < 0) ИЛИ срабатывает вероятность (отжиг)
+                // Jeśli rozwiązanie jest lepsze (delta < 0) LUB zadziała prawdopodobieństwo (wyżarzanie)
                 if (delta < 0 || prob(rng) < std::exp(-delta / T)) {
                     current_path = neighbor;
                     current_cost = neighbor_cost;
@@ -195,11 +195,11 @@ public:
                 trace->push_back({elapsed_ms.count(), current_cost, best_cost, T});
             }
 
-            // Охлаждение
+            // Chłodzenie
             if (cooling_scheme == 0) {
-                T *= alpha; // Геометрическое
+                T *= alpha; // Geometryczne
             } else {
-                T -= alpha; // Линейное
+                T -= alpha; // Liniowe
             }
         }
 
