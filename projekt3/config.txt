@@ -15,7 +15,7 @@ show_progress=1
 epoch_length=1000
 
 # 2. Wspolczynnik chlodzenia
-alpha=0.99
+alpha=0.995
 
 # 3. Schemat chlodzenia: 0 = geometryczne (T *= alpha), 1 = linearne (T -= alpha)
 cooling_scheme=0

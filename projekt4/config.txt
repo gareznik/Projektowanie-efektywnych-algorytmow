@@ -1,0 +1,14 @@
+# Wygenerowane automatycznie przez Python
+use_generator=0
+instance_size=20
+input_file=input/pr2392.tsp
+output_file=output/test2.csv
+repetitions=1
+time_limit_s=60
+show_progress=0
+num_ants=239
+alpha=1.0
+beta=4.0
+rho=0.5
+q_val=100.0
+save_trace=0
